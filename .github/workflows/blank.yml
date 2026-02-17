@@ -1,0 +1,53 @@
+name: ⚡ Hermes Decompiler Pro (JS Extract)
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_url:
+        description: 'Lien direct du fichier .bundle'
+        required: true
+        default: 'https://files.catbox.moe/vey66j.bundle'
+
+jobs:
+  crack-hermes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: 1. Préparation de l'environnement
+        uses: actions/checkout@v4
+
+      - name: 2. Installation de Python & Outils
+        uses: actions/setup-python@v5
+        with:
+          python3-version: '3.10' 
+
+      - name: 3. Récupération de l'outil de décryptage
+        run: |
+          # On clone l'outil spécialisé P1sec pour Hermes
+          git clone https://github.com/P1sec/hermes-dec.git
+          pip install lib constr bitstring
+          
+      - name: 4. Téléchargement de ton fichier cible
+        run: |
+          echo "Téléchargement de ${{ inputs.file_url }}..."
+          curl -L "${{ inputs.file_url }}" -o index.android.bundle
+
+      - name: 5. DÉCOMPILATION (Le moment magique)
+        run: |
+          # On lance le script python qui transforme le binaire en texte lisible
+          python3 hermes-dec/hbc_decompiler.py index.android.bundle decompiled_source.js
+          
+      - name: 6. Vérification du résultat
+        run: |
+          ls -lh decompiled_source.js
+          echo "Si le fichier pèse plus de 0 octet, c'est gagné."
+
+      - name: 7. Envoi du résultat (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Code-Source-Decompile
+          path: decompiled_source.js
+          retention-days: 5
+          
